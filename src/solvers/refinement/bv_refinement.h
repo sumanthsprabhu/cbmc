@@ -36,6 +36,7 @@ public:
   // enable/disable refinements
   bool do_array_refinement;
   bool do_arithmetic_refinement;
+  bool do_cpu_refinement;
 
   using bv_pointerst::is_in_conflict;
 
@@ -82,6 +83,7 @@ protected:
   approximationt &add_approximation(const exprt &expr, bvt &bv);
   void check_SAT(approximationt &approximation);
   void check_UNSAT(approximationt &approximation);
+
   void initialize(approximationt &approximation);
   void get_values(approximationt &approximation);
   bool is_in_conflict(approximationt &approximation);
@@ -100,7 +102,7 @@ protected:
   virtual bvt convert_div(const div_exprt &expr);
   virtual bvt convert_mod(const mod_exprt &expr);
   virtual bvt convert_floatbv_op(const exprt &expr);
-
+  
   // for collecting statistics
   virtual void set_to(const exprt &expr, bool value);
 
@@ -108,7 +110,12 @@ protected:
   virtual void set_assumptions(const bvt &_assumptions);
 
   bvt parent_assumptions;
-
+  
+  bvt  cpu_approximations;
+  void add_cpu_approximations();
+  void check_cpu_UNSAT();
+  //void add_cpu_approximation(const bvt& bv);
+  
   // use gui format
   language_uit::uit ui;
 };

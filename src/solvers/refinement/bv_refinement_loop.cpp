@@ -7,6 +7,7 @@ Author: Daniel Kroening, kroening@kroening.com
 \*******************************************************************/
 
 #include <iostream>
+#include <solvers/sat/dimacs_cnf.h>
 
 #include <util/xml.h>
 
@@ -29,7 +30,8 @@ bv_refinementt::bv_refinementt(
   bv_pointerst(_ns, _prop),
   max_node_refinement(5),
   do_array_refinement(true),
-  do_arithmetic_refinement(true)
+  do_arithmetic_refinement(true),
+  do_cpu_refinement(false)
 {
   // check features we need
   assert(prop.has_set_assumptions());
@@ -71,6 +73,8 @@ decision_proceduret::resultt bv_refinementt::dec_solve()
   status() << "BV-Refinement: post-processing" << eom;
   post_process();
 
+  add_cpu_approximations();
+  
   debug() << "Solving with " << prop.solver_text() << eom;
 
   unsigned iteration=0;
@@ -155,6 +159,8 @@ decision_proceduret::resultt bv_refinementt::prop_solve()
       a_it->under_assumptions.begin(), a_it->under_assumptions.end());
   }
 
+  assumptions.insert(assumptions.end(), cpu_approximations.begin(), cpu_approximations.end());
+  
   prop.set_assumptions(assumptions);
   propt::resultt result=prop.prop_solve();
   prop.set_assumptions(parent_assumptions);
@@ -208,6 +214,8 @@ void bv_refinementt::check_UNSAT()
 {
   progress=false;
 
+  check_cpu_UNSAT();
+  
   for(approximationst::iterator
       a_it=approximations.begin();
       a_it!=approximations.end();
@@ -262,3 +270,139 @@ void bv_refinementt::set_assumptions(const bvt &_assumptions)
   parent_assumptions=_assumptions;
   prop.set_assumptions(_assumptions);
 }
+
+
+void bv_refinementt::add_cpu_approximations()
+{
+//  symbol_tablet::symbolst symbols = ns.get_symbol_table().symbols;
+
+  // for (const auto &it : get_symbols()) {
+  //   std::cout << "CPU_REFINEMENT: acra "
+  //             << it.first << " " << it.second.dimacs() << std::endl;
+        
+  //   if ((id2string(it.first).find("is_local") != std::string::npos)) {
+  //     std::cout << "CPU_REFINEMENT: acra "
+  //               << it.first << " " << it.second.dimacs() << std::endl;
+  //   }
+  // }
+  for(const auto &m : get_map().mapping)
+  {
+    const boolbv_mapt::literal_mapt &literal_map=m.second.literal_map;
+
+    if(literal_map.empty())
+      continue;
+
+    if ((id2string(m.first).find("is_local") == std::string::npos)) {
+      continue;
+    }
+
+    bvt bv;
+//    std::cout << "CPU_REFINEMENT: adding: " << m.first << " ";
+    
+    for(const auto &lit : literal_map) {
+      if (!lit.is_set || lit.l.is_constant()) {
+        continue;
+      }
+      cpu_approximations.push_back(lit.l);
+//      std::cout << " " << lit.l.dimacs();
+      break;
+    }
+    //std::cout << std::endl;
+  }
+  set_frozen(cpu_approximations);
+  // forall_symbols(it, symbols)
+  //   if((id2string(it->first).find("is_local") != std::string::npos)) {
+  //     std::cout << "CPU_REFINEMENT: acra " << it->first << " "
+  //               << it->second.dimacs() << std::endl;
+  //     bvt bv;
+  //     bv.resize(boolbv_width(it->second.type));
+
+  //     map.get_literals(it->first,
+  //                      it->second.type,
+  //                      boolbv_width(it->second.type),
+  //                      bv);
+      
+    // forall_literals(it, bv)
+    //   std::cout << "CPU_REFINEMENT: add_approx() var_no: " << it->var_no() << std::endl;
+    
+      // std::cout << "CPU_REFINEMENT: acra "
+      //           << id2string(it->first) << " "
+      //           << boolbv_width(it->second.type) << " "
+      //           << bv.size() << " "
+      //           << std::endl;
+      
+      // add_cpu_approximation(bv);
+  //}
+}
+
+void bv_refinementt::check_cpu_UNSAT()
+{
+  bvt new_approx;
+  int count_conflicts = 0;
+
+  while (!cpu_approximations.empty()) {
+    literalt tmp = cpu_approximations.back();
+    if (!prop.is_in_conflict(tmp)) {
+      new_approx.push_back(tmp);
+    } else {
+      //    std::cout << "CPU REFINEMENT: check_cpu_UNSAT() "
+//                << tmp.dimacs() << " is in conflict" << std::endl;
+      count_conflicts++;
+      progress = true;
+    }
+    cpu_approximations.pop_back();
+  }
+
+  std::cout << "CPU_REFINEMENT: " << new_approx.size() << std::endl;
+  
+  if (count_conflicts == 0 && new_approx.size() > 0) {
+    for (bvt::const_iterator itr = new_approx.begin();
+         itr != new_approx.end();
+         itr++) {
+      for(const auto &m : get_map().mapping)
+      {
+        const boolbv_mapt::literal_mapt &literal_map=m.second.literal_map;
+
+        if(literal_map.empty())
+          continue;
+
+        if ((id2string(m.first).find("is_local") == std::string::npos)) {
+          continue;
+        }
+
+        for(const auto &lit : literal_map) {
+          if (!lit.is_set || lit.l.is_constant()) {
+            continue;
+          }
+          if (*itr == lit.l) {
+            std::cout << "CPU_REFIENEMENT: " << m.first << " " << lit.l.dimacs() << std::endl;
+          }
+        }
+      }
+    //std::cout << std::endl;
+    }
+  }    
+ std::cout << "CPU REFINEMENT: check_cpu_UNSAT() conflict count "
+           << count_conflicts << std::endl;
+  
+  cpu_approximations.insert(cpu_approximations.end(),
+                            new_approx.begin(),
+                            new_approx.end());
+}
+// void bv_refinementt::add_cpu_approximation(const bvt& bv)
+// {
+//     approximations.push_back(approximationt(approximations.size()));
+//   approximationt &a = approximations.back(); // stable!
+//   a.result_bv = bv;
+//   a.no_operands = 0;
+//   set_frozen(a.result_bv);
+//   a.over_state = a.under_state = 0;
+
+//   a.under_assumptions.reserve(a.result_bv.size());
+  
+//   for (std::size_t i = 0; i < a.result_bv.size(); i++) {
+//     a.add_under_assumption(a.result_bv[i]);
+//   }
+
+// }
+

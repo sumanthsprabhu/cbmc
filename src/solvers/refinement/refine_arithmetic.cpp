@@ -10,6 +10,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/ieee_float.h>
 #include <util/expr_util.h>
 #include <util/arith_tools.h>
+#include <iostream>
 
 #include <langapi/language_util.h>
 
@@ -255,6 +256,8 @@ Function: bv_refinementt::check_SAT
 
 void bv_refinementt::check_SAT(approximationt &a)
 {
+  if (a.no_operands == 0) return;
+  
   // get values
   get_values(a);
 
@@ -470,9 +473,13 @@ Function: bv_refinementt::check_UNSAT
 
 void bv_refinementt::check_UNSAT(approximationt &a)
 {
+    // std::cout << "CPU_REFINEMENT: check_UNSAT before is_in_conflict" << std::endl;
+
   // part of the conflict?
   if(!is_in_conflict(a))
     return;
+
+  // std::cout << "CPU_REFINEMENT: check_UNSAT after is_in_conflict" << std::endl;
 
   status() << "Found assumption for `" << a.as_string()
            << "' in proof (state " << a.under_state << ")" << eom;
@@ -480,6 +487,18 @@ void bv_refinementt::check_UNSAT(approximationt &a)
   assert(!a.under_assumptions.empty());
 
   a.under_assumptions.clear();
+
+  // if(do_cpu_refinement) {
+  //   //if the symbol is "is_local" then simply remove it from approximation
+  //   irep_idt  id = to_symbol_expr(a.expr).get_identifier();
+  //   std::string idstr = id2string(id);
+  //   std::cout << "CPU_REFINEMENT: " << id2string(id) << std::endl;
+  //   if (idstr.find("is_local") != std::string::npos) {
+  //     a.under_state++;
+  //     progress=true;
+  //     return;
+  //   }
+  // }
 
   if(a.expr.type().id()==ID_floatbv)
   {
@@ -569,6 +588,7 @@ Function: bv_refinementt::is_in_conflict
 
 bool bv_refinementt::is_in_conflict(approximationt &a)
 {
+  // std::cout << "CPU_REFINEMENT: is_in_conflict uas size " << a.under_assumptions.size() << std::endl;
   for(std::size_t i=0; i<a.under_assumptions.size(); i++)
     if(prop.is_in_conflict(a.under_assumptions[i]))
       return true;
@@ -681,3 +701,29 @@ std::string bv_refinementt::approximationt::as_string() const
   return std::to_string(id_nr)+"/"+id2string(expr.id());
   #endif
 }
+
+// bvt bv_refinementt::convert_symbol(const exprt &expr)
+// {
+//   std::cout << "CPU_REFINEMENT: convert_symbol" << std::endl;
+  
+//   if(!do_cpu_refinement) {
+//       std::cout << "CPU_REFINEMENT: calling SUB::convert_symbol" << std::endl;
+//     return SUB::convert_symbol(expr);   
+//   }
+
+//   //if the symbol is "is_local" then add it as assumption
+//   //we can use auxilary variable instead here
+//   irep_idt  id = to_symbol_expr(expr).get_identifier();
+//   std::string idstr = id2string(id);
+//   std::cout << "CPU_REFINEMENT: convert_symbol id name: "
+//             << id2string(id) << std::endl;
+//   if (idstr.find("is_local") != std::string::npos) {
+//     bvt bv = SUB::convert_symbol(expr);;
+// //    add_approximation(expr, bv);
+//     return bv;
+//   }
+//   return SUB::convert_symbol(expr);
+// }
+
+     
+

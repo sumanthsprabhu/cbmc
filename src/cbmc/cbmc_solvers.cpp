@@ -207,6 +207,9 @@ cbmc_solverst::solvert* cbmc_solverst::get_bv_refinement()
     options.get_bool_option("refine-arrays");
   bv_refinement->do_arithmetic_refinement =
     options.get_bool_option("refine-arithmetic");
+  bv_refinement->do_cpu_refinement =
+    options.get_bool_option("refine-cpu");
+
 
   return new solvert(bv_refinement, prop);
 }

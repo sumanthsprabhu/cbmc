@@ -7,6 +7,7 @@ Author: Daniel Kroening, kroening@kroening.com
 \*******************************************************************/
 
 #include <cassert>
+#include <iostream>
 
 #include <util/std_expr.h>
 
@@ -674,6 +675,8 @@ void symex_target_equationt::convert_decls(
     {
       // The result is not used, these have no impact on
       // the satisfiability of the formula.
+      // std::cout << "CPU_REFINEMENT: convert_decls "
+      //           << id2string(step.cond_expr.id()) << std::endl;
       prop_conv.convert(step.cond_expr);
     }
   }

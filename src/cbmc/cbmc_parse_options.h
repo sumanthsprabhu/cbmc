@@ -36,7 +36,7 @@ class optionst;
   "(smt1)(smt2)(fpa)(cvc3)(cvc4)(boolector)(yices)(z3)(opensmt)(mathsat)" \
   "(no-sat-preprocessor)" \
   "(no-pretty-names)(beautify)" \
-  "(dimacs)(refine)(max-node-refinement):(refine-arrays)(refine-arithmetic)"\
+  "(dimacs)(refine)(max-node-refinement):(refine-arrays)(refine-arithmetic)(refine-cpu)"\
   "(aig)(16)(32)(64)(LP64)(ILP64)(LLP64)(ILP32)(LP32)" \
   "(little-endian)(big-endian)" \
   "(show-goto-functions)(show-loops)" \

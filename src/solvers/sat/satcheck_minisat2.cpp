@@ -12,6 +12,8 @@ Author: Daniel Kroening, kroening@kroening.com
 
 #include <cassert>
 #include <stack>
+#include <iostream>
+#include <stdio.h>
 
 #include <util/threeval.h>
 
@@ -41,8 +43,9 @@ void convert(const bvt &bv, Minisat::vec<Minisat::Lit> &dest)
   dest.capacity(bv.size());
 
   forall_literals(it, bv)
-    if(!it->is_false())
+    if(!it->is_false()) {
       dest.push(Minisat::mkLit(it->var_no(), it->sign()));
+    }
 }
 
 /*******************************************************************\
@@ -232,9 +235,11 @@ propt::resultt satcheck_minisat2_baset<T>::prop_solve()
       // if assumptions contains false, we need this to be UNSAT
       bool has_false=false;
 
-      forall_literals(it, assumptions)
+      forall_literals(it, assumptions) {
+        // std::cout << "CPU_REFINEMENT: convert() var_no: " << it->var_no() << std::endl;
         if(it->is_false())
           has_false=true;
+      }
 
       if(has_false)
       {
@@ -244,7 +249,26 @@ propt::resultt satcheck_minisat2_baset<T>::prop_solve()
       else
       {
         Minisat::vec<Minisat::Lit> solver_assumptions;
+
         convert(assumptions, solver_assumptions);
+        std::cout << "CPU_REFINEMENT: prop_solve() solver_assumptions.size "
+                  << solver_assumptions.size() << std::endl;
+
+          {
+            messaget::status() <<
+              solver->nVars() << " variables, " <<
+              solver->nClauses() << " clauses" << eom;
+          }
+
+        //dump the formula to some file
+        // FILE *fp;
+        // fp = fopen("tmp_dimacs", "w");
+        // if (fp != NULL) {
+        //   solver->toDimacs(fp, solver_assumptions);
+        //   fclose(fp);
+        // } else {
+        //   std::cout << "CPU_REFINEMENT: failed to open tmp_dimacs" << std::endl;
+        // }
 
         if(solver->solve(solver_assumptions))
         {

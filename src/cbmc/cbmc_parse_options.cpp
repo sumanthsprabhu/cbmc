@@ -302,6 +302,13 @@ void cbmc_parse_optionst::get_command_line_options(optionst &options)
     options.set_option("refine-arithmetic", true);
   }
 
+  if(cmdline.isset("refine-cpu"))
+  {
+    options.set_option("refine", true);
+    options.set_option("refine-cpu", true);
+  }
+
+
   if(cmdline.isset("refine"))
   {
     options.set_option("refine", true);

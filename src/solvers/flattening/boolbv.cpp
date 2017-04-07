@@ -9,6 +9,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <cassert>
 #include <map>
 #include <set>
+#include <iostream>
 
 #include <util/symbol.h>
 #include <util/mp_arith.h>
@@ -147,6 +148,8 @@ const bvt &boolbvt::convert_bv(const exprt &expr)
     #ifdef DEBUG
     std::cout << "Cache hit on " << expr << "\n";
     #endif
+    // std::cout << "CPU_REFIENEMENT: convert_bv cache hit! expr: "
+    //           << cache_result.first->first.pretty() << std::endl;
     return cache_result.first->second;
   }
 
@@ -477,6 +480,9 @@ bvt boolbvt::convert_symbol(const exprt &expr)
 
   const irep_idt &identifier=expr.get(ID_identifier);
 
+  // std::cout << "CPU_REFINEMENT: convert_symbol(original) id,bvsize "
+  //           << identifier << "," << bv.size() << std::endl;
+
   if(identifier.empty())
     throw "convert_symbol got empty identifier";
 
@@ -487,6 +493,8 @@ bvt boolbvt::convert_symbol(const exprt &expr)
   }
   else
   {
+    // std::cout << "CPU_REFINEMENT: convert_symbol(original) size before get_literals " << bv.size() << std::endl;
+
     map.get_literals(identifier, type, width, bv);
 
     forall_literals(it, bv)
@@ -496,6 +504,9 @@ bvt boolbvt::convert_symbol(const exprt &expr)
         error() << identifier << eom;
         assert(false);
       }
+
+    // std::cout << "CPU_REFINEMENT: convert_symbol(original) size after get_literals " << bv.size() << std::endl;
+
   }
 
   return bv;
