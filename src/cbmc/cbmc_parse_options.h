@@ -57,6 +57,8 @@ class optionst;
   "(java-max-vla-length):(java-unwind-enum-static)" \
   "(localize-faults)(localize-faults-method):" \
   "(lazy-methods)" \
+  "(invariant-file):" \
+  "(invariant-strategy):" \
   "(fixedbv)(floatbv)(all-claims)(all-properties)" // legacy, and will eventually disappear // NOLINT(whitespace/line_length)
 
 class cbmc_parse_optionst:

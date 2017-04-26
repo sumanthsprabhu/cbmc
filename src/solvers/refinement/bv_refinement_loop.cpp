@@ -8,6 +8,7 @@ Author: Daniel Kroening, kroening@kroening.com
 
 #include <iostream>
 #include <solvers/sat/dimacs_cnf.h>
+#include <util/time_stopping.h>
 
 #include <util/xml.h>
 
@@ -79,6 +80,10 @@ decision_proceduret::resultt bv_refinementt::dec_solve()
 
   unsigned iteration=0;
 
+  unsigned start_inv_size=cpu_approximations.size();
+
+//  absolute_timet sat_start=current_time();
+  
   // now enter the loop
   while(true)
   {
@@ -100,8 +105,12 @@ decision_proceduret::resultt bv_refinementt::dec_solve()
       check_SAT();
       if(!progress)
       {
+        //      absolute_timet sat_stop=current_time();
         status() << "BV-Refinement: got SAT, and it simulates => SAT" << eom;
         status() << "Total iterations: " << iteration << eom;
+        status() << "CPU_REFINEMENT_END: " << start_inv_size << " to "
+                 << cpu_approximations.size() << " in " << iteration << eom;
+//        status() << "CPU EFINEMENT Runtime decision procedure: " << (sat_stop-sat_start) << eom;
         return D_SATISFIABLE;
       }
       else
@@ -113,9 +122,14 @@ decision_proceduret::resultt bv_refinementt::dec_solve()
       check_UNSAT();
       if(!progress)
       {
+        //      absolute_timet sat_stop=current_time();
         status() << "BV-Refinement: got UNSAT, and the proof passes => UNSAT"
                  << eom;
         status() << "Total iterations: " << iteration << eom;
+        status() << "CPU_REFINEMENT_END: " << start_inv_size << " to "
+                 << cpu_approximations.size() << " in " << iteration << eom;
+//        status() << "CPU REFINEMENT Runtime decision procedure: " << (sat_stop-sat_start) << eom;
+
         return D_UNSATISFIABLE;
       }
       else
@@ -188,14 +202,27 @@ Function: bv_refinementt::check_SAT
 void bv_refinementt::check_SAT()
 {
   progress=false;
+  
+//  if (do_array_refinement) {
+    arrays_overapproximated();
+//  }
 
-  arrays_overapproximated();
+//  if (do_array_refinement || do_arithmetic_refinement) {
+    for(approximationst::iterator
+          a_it=approximations.begin();
+        a_it!=approximations.end();
+        a_it++)
+      check_SAT(*a_it);
+//  }
 
-  for(approximationst::iterator
-      a_it=approximations.begin();
-      a_it!=approximations.end();
-      a_it++)
-    check_SAT(*a_it);
+#ifdef COUNT_WRITE_SAVING
+  if(!progress) {
+    uint64_t totalWriteSaved = 0;
+    for (const auto& it : solver_write_save_count_lit)
+      totalWriteSaved += it.second;
+    std::cout << "CPU REFINEMENT: total writes saved " << totalWriteSaved << std::endl;
+  }
+#endif
 }
 
 /*******************************************************************\
@@ -285,30 +312,49 @@ void bv_refinementt::add_cpu_approximations()
   //               << it.first << " " << it.second.dimacs() << std::endl;
   //   }
   // }
-  for(const auto &m : get_map().mapping)
-  {
-    const boolbv_mapt::literal_mapt &literal_map=m.second.literal_map;
 
-    if(literal_map.empty())
-      continue;
+  // forall_symbols(it, ns.get_symbol_table().symbols) {
+  //     std::cout << id2string(it->first) << std::endl;
+  // }
 
-    if ((id2string(m.first).find("is_local") == std::string::npos)) {
+  for (const auto &it : get_symbols()) {
+    if ((id2string(it.first).find("is_local") == std::string::npos)) {
       continue;
     }
-
-    bvt bv;
-//    std::cout << "CPU_REFINEMENT: adding: " << m.first << " ";
-    
-    for(const auto &lit : literal_map) {
-      if (!lit.is_set || lit.l.is_constant()) {
-        continue;
-      }
-      cpu_approximations.push_back(lit.l);
-//      std::cout << " " << lit.l.dimacs();
-      break;
-    }
-    //std::cout << std::endl;
+    cpu_approximations.push_back(it.second);
+    #ifdef COUNT_WRITE_SAVING
+    solver_write_save_count_lit[it.second] = solver_write_save_count[it.first];
+    #endif
   }
+
+    // std::cout << "CPU_REFINEMENT: "
+    //           << it.first << " " << it.second.dimacs() << std::endl;
+//  }
+
+//   for(const auto &m : get_map().mapping)
+//   {
+//     const boolbv_mapt::literal_mapt &literal_map=m.second.literal_map;
+
+//     if(literal_map.empty())
+//       continue;
+    
+//     if ((id2string(m.first).find("is_local") == std::string::npos)) {
+//       continue;
+//     }
+
+//     bvt bv;
+// //    std::cout << "CPU_REFINEMENT: adding: " << m.first << " ";
+    
+//     for(const auto &lit : literal_map) {
+//       if (!lit.is_set || lit.l.is_constant()) {
+//         continue;
+//       }
+//       cpu_approximations.push_back(lit.l);
+// //      std::cout << " " << lit.l.dimacs();
+//       break;
+//     }
+//     //std::cout << std::endl;
+//   }
   set_frozen(cpu_approximations);
   // forall_symbols(it, symbols)
   //   if((id2string(it->first).find("is_local") != std::string::npos)) {
@@ -348,46 +394,59 @@ void bv_refinementt::check_cpu_UNSAT()
       //    std::cout << "CPU REFINEMENT: check_cpu_UNSAT() "
 //                << tmp.dimacs() << " is in conflict" << std::endl;
       count_conflicts++;
+      #ifdef COUNT_WRITE_SAVING
+      solver_write_save_count_lit[tmp] = 0;
+      #endif
       progress = true;
     }
     cpu_approximations.pop_back();
   }
 
-  std::cout << "CPU_REFINEMENT: " << new_approx.size() << std::endl;
+//  std::cout << "CPU_REFINEMENT: " << new_approx.size() << std::endl;
   
-  if (count_conflicts == 0 && new_approx.size() > 0) {
-    for (bvt::const_iterator itr = new_approx.begin();
-         itr != new_approx.end();
-         itr++) {
-      for(const auto &m : get_map().mapping)
-      {
-        const boolbv_mapt::literal_mapt &literal_map=m.second.literal_map;
+  // if (count_conflicts == 0 && new_approx.size() > 0) {
+  //   for (bvt::const_iterator itr = new_approx.begin();
+  //        itr != new_approx.end();
+  //        itr++) {
+  //     for(const auto &m : get_map().mapping)
+  //     {
+  //       const boolbv_mapt::literal_mapt &literal_map=m.second.literal_map;
 
-        if(literal_map.empty())
-          continue;
+  //       if(literal_map.empty())
+  //         continue;
 
-        if ((id2string(m.first).find("is_local") == std::string::npos)) {
-          continue;
-        }
+  //       if ((id2string(m.first).find("is_local") == std::string::npos)) {
+  //         continue;
+  //       }
 
-        for(const auto &lit : literal_map) {
-          if (!lit.is_set || lit.l.is_constant()) {
-            continue;
-          }
-          if (*itr == lit.l) {
-            std::cout << "CPU_REFIENEMENT: " << m.first << " " << lit.l.dimacs() << std::endl;
-          }
-        }
-      }
-    //std::cout << std::endl;
-    }
-  }    
+  //       for(const auto &lit : literal_map) {
+  //         if (!lit.is_set || lit.l.is_constant()) {
+  //           continue;
+  //         }
+  //         if (*itr == lit.l) {
+  //           std::cout << "CPU_REFIENEMENT: " << m.first << " " << lit.l.dimacs() << std::endl;
+  //         }
+  //       }
+  //     }
+  //   //std::cout << std::endl;
+  //   }
+  // }    
  std::cout << "CPU REFINEMENT: check_cpu_UNSAT() conflict count "
            << count_conflicts << std::endl;
   
   cpu_approximations.insert(cpu_approximations.end(),
                             new_approx.begin(),
                             new_approx.end());
+
+  #ifdef COUNT_WRITE_SAVING
+  if(!progress) {
+    uint64_t totalWriteSaved = 0;
+    for (const auto& it : solver_write_save_count)
+      totalWriteSaved += it.second;
+    std::cout << "CPU REFINEMENT: total writes saved " << totalWriteSaved << std::endl;
+  }
+  #endif
+    
 }
 // void bv_refinementt::add_cpu_approximation(const bvt& bv)
 // {

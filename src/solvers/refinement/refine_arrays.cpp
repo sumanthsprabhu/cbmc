@@ -31,6 +31,11 @@ Function: bv_refinementt::post_process_arrays
 
 void bv_refinementt::post_process_arrays()
 {
+
+  // if (!do_array_refinement) {
+  //   return;
+  // }
+  
   collect_indices();
   // at this point all indices should in the index set
 

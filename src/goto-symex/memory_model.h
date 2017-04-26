@@ -19,6 +19,11 @@ public:
 
   virtual void operator()(symex_target_equationt &)=0;
 
+  void set_invariant_file(const std::string &in) { inv_file = in; }
+  void set_invariant_strategy(const char &s) { inv_strategy = s; }
+#ifdef COUNT_WRITE_SAVING
+    std::map<irep_idt, uint64_t> write_save_map;
+#endif
 protected:
   // program order
   bool po(event_it e1, event_it e2);
@@ -37,6 +42,9 @@ protected:
 
   // maps thread numbers to an event list
   typedef std::map<unsigned, event_listt> per_thread_mapt;
+
+  std::string inv_file;
+  char inv_strategy;
 };
 
 #endif // CPROVER_GOTO_SYMEX_MEMORY_MODEL_H

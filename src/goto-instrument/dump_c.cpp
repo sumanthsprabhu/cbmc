@@ -8,6 +8,7 @@ Author: Daniel Kroening, kroening@kroening.com
 
 #include <sstream>
 #include <cctype>
+#include <iostream>
 
 #include <util/config.h>
 #include <util/prefix.h>
@@ -188,6 +189,11 @@ void dump_ct::operator()(std::ostream &os)
         type_id==ID_incomplete_union ||
         type_id==ID_c_enum))
     {
+      if (id2string(symbol.name).find("anon") == std::string::npos && 
+          id2string(symbol.name).find("pthread") != std::string::npos) {
+        continue;
+      }
+      
       os << "// " << symbol.name << std::endl;
       os << "// " << symbol.location << std::endl;
 
@@ -245,10 +251,13 @@ void dump_ct::operator()(std::ostream &os)
         (symbol.type.id()==ID_struct ||
          symbol.type.id()==ID_incomplete_struct ||
          symbol.type.id()==ID_union ||
-         symbol.type.id()==ID_incomplete_union))
-      convert_compound_declaration(
+         symbol.type.id()==ID_incomplete_union)) 
+      if (id2string(symbol.name).find("anon") != std::string::npos ||
+          id2string(symbol.name).find("pthread") == std::string::npos) {
+        convert_compound_declaration(
           symbol,
           compound_body_stream);
+       } 
   }
 
   for(std::set<std::string>::const_iterator
@@ -310,6 +319,7 @@ void dump_ct::convert_compound_declaration(
     const symbolt &symbol,
     std::ostream &os_body)
 {
+    
   if(!symbol.location.get_function().empty())
     return;
 
@@ -344,8 +354,12 @@ void dump_ct::convert_compound(
       ns.lookup(to_symbol_type(type).get_identifier());
     assert(symbol.is_type);
 
-    if(!ignore(symbol))
-      convert_compound(symbol.type, unresolved, recursive, os);
+    if(!ignore(symbol)) {
+      if (id2string(symbol.name).find("anon") != std::string::npos ||
+          id2string(symbol.name).find("pthread") == std::string::npos) {
+        convert_compound(symbol.type, unresolved, recursive, os);
+      }
+    }
   }
   else if(type.id()==ID_c_enum_tag)
   {
@@ -682,7 +696,7 @@ void dump_ct::init_system_library_map()
     "pthread_rwlock_unlock", "pthread_rwlock_wrlock",
     "pthread_rwlockattr_destroy", "pthread_rwlockattr_getpshared",
     "pthread_rwlockattr_init", "pthread_rwlockattr_setpshared",
-    "pthread_self", "pthread_setspecific"
+    "pthread_self", "pthread_setspecific", "pthread_mutex_t"
   };
   ADD_TO_SYSTEM_LIBRARY(pthread_syms, "pthread.h");
 

@@ -37,7 +37,10 @@ public:
   bool do_array_refinement;
   bool do_arithmetic_refinement;
   bool do_cpu_refinement;
-
+  #ifdef COUNT_WRITE_SAVING
+  std::map<irep_idt, uint64_t> solver_write_save_count;
+  std::map<literalt, uint64_t> solver_write_save_count_lit;
+  #endif
   using bv_pointerst::is_in_conflict;
 
   void set_ui(language_uit::uit _ui) { ui=_ui; }
@@ -114,6 +117,7 @@ protected:
   bvt  cpu_approximations;
   void add_cpu_approximations();
   void check_cpu_UNSAT();
+  std::map<literalt, uint64_t> write_saving_map_lit;
   //void add_cpu_approximation(const bvt& bv);
   
   // use gui format

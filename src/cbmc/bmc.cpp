@@ -34,6 +34,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <goto-symex/memory_model_sc.h>
 #include <goto-symex/memory_model_tso.h>
 #include <goto-symex/memory_model_pso.h>
+#include <solvers/refinement/bv_refinement.h>
 
 #include "counterexample_beautification.h"
 #include "fault_localization.h"
@@ -429,6 +430,12 @@ safety_checkert::resultt bmct::run(
     return safety_checkert::ERROR;
   }
 
+  memory_model->set_invariant_file(options.get_option("invariant-file"));
+  const std::string s = options.get_option("invariant-strategy");
+  if (!s.empty()) {
+    memory_model->set_invariant_strategy(s[0]);
+  }
+  
   symex.set_message_handler(get_message_handler());
   symex.options=options;
 
@@ -455,6 +462,13 @@ safety_checkert::resultt bmct::run(
     {
       memory_model->set_message_handler(get_message_handler());
       (*memory_model)(equation);
+      #ifdef COUNT_WRITE_SAVING
+      if(options.get_bool_option("refine-cpu")) {
+        for (const auto & it : memory_model->write_save_map) {
+          dynamic_cast<bv_refinementt &>(prop_conv).solver_write_save_count[it.first] = it.second;
+        }
+      }
+      #endif
     }
   }
 

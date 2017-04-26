@@ -446,6 +446,13 @@ void cbmc_parse_optionst::get_command_line_options(optionst &options)
     options.set_option(
       "symex-coverage-report",
       cmdline.get_value("symex-coverage-report"));
+
+  if(cmdline.isset("invariant-file"))
+    options.set_option("invariant-file", cmdline.get_value("invariant-file"));
+
+  if(cmdline.isset("invariant-strategy"))
+    options.set_option("invariant-strategy", cmdline.get_value("invariant-strategy"));
+
 }
 
 /*******************************************************************\
