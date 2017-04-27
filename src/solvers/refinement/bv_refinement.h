@@ -40,6 +40,7 @@ public:
   #ifdef COUNT_WRITE_SAVING
   std::map<irep_idt, uint64_t> solver_write_save_count;
   std::map<literalt, uint64_t> solver_write_save_count_lit;
+  std::map<irep_idt, uint64_t> solver_total_writes;
   #endif
   using bv_pointerst::is_in_conflict;
 

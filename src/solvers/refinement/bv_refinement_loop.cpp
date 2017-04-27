@@ -218,9 +218,15 @@ void bv_refinementt::check_SAT()
 #ifdef COUNT_WRITE_SAVING
   if(!progress) {
     uint64_t totalWriteSaved = 0;
+    uint64_t totalWrites = 0;
     for (const auto& it : solver_write_save_count_lit)
       totalWriteSaved += it.second;
-    std::cout << "CPU REFINEMENT: total writes saved " << totalWriteSaved << std::endl;
+
+    for (const auto& it : solver_total_writes)
+      totalWrites += it.second;
+    
+    std::cout << "CPU REFINEMENT: total writes saved "
+              << totalWriteSaved << " " << totalWrites << std::endl;
   }
 #endif
 }
@@ -441,9 +447,16 @@ void bv_refinementt::check_cpu_UNSAT()
   #ifdef COUNT_WRITE_SAVING
   if(!progress) {
     uint64_t totalWriteSaved = 0;
-    for (const auto& it : solver_write_save_count)
+    uint64_t totalWrites = 0;
+
+    for (const auto& it : solver_write_save_count_lit)
       totalWriteSaved += it.second;
-    std::cout << "CPU REFINEMENT: total writes saved " << totalWriteSaved << std::endl;
+    
+    for (const auto& it : solver_total_writes)
+      totalWrites += it.second;
+    
+    std::cout << "CPU REFINEMENT: total writes saved " << totalWriteSaved
+              << " " << totalWrites << std::endl;
   }
   #endif
     

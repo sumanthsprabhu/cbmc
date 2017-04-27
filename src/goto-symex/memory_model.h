@@ -23,6 +23,7 @@ public:
   void set_invariant_strategy(const char &s) { inv_strategy = s; }
 #ifdef COUNT_WRITE_SAVING
     std::map<irep_idt, uint64_t> write_save_map;
+    std::map<irep_idt, uint64_t> total_writes_map;
 #endif
 protected:
   // program order

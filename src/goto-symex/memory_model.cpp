@@ -260,6 +260,9 @@ void memory_model_baset::read_from(symex_target_equationt &equation)
       //           << " urf size " << urf_some_operands.size() << std::endl;
       // value equals the one of some write
       exprt rf_some;
+      #ifdef COUNT_WRITE_SAVING
+      uint64_t total_writes = rf_some_operands.size();
+      #endif
       uint64_t write_diff = rf_some_operands.size() - urf_some_operands.size();
 //      std::cout << r_varname << " " << write_diff << std::endl;
       if (rf_some_operands.empty()) {
@@ -302,6 +305,7 @@ void memory_model_baset::read_from(symex_target_equationt &equation)
         symbol_exprt is_local = nondet_bool_symbol("is_local");
         #ifdef COUNT_WRITE_SAVING
         write_save_map[is_local.get_identifier()] = write_diff;
+        total_writes_map[is_local.get_identifier()] = total_writes;
         #endif
 //        std::cout << "Added: " << r_varname << " " << r_src_line << " " << write_diff << std::endl;
 //        write_saving_map[is_local.get_identifier()] = write_diff;

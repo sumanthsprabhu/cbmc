@@ -10,7 +10,7 @@ BUILD_ENV = AUTO
 # Select optimisation or debug info
 #CXXFLAGS += -O2 -DNDEBUG
 #CXXFLAGS += -O0 -g
-
+#CXXFLAGS += -DCOUNT_WRITE_SAVING
 # If GLPK is available; this is used by goto-instrument and musketeer.
 #LIB_GLPK = -lglpk
 

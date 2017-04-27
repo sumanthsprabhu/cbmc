@@ -467,6 +467,10 @@ safety_checkert::resultt bmct::run(
         for (const auto & it : memory_model->write_save_map) {
           dynamic_cast<bv_refinementt &>(prop_conv).solver_write_save_count[it.first] = it.second;
         }
+        for (const auto & it : memory_model->total_writes_map) {
+          dynamic_cast<bv_refinementt &>(prop_conv).solver_total_writes[it.first] = it.second;
+        }
+        
       }
       #endif
     }
